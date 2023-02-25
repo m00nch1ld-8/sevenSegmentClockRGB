@@ -1,3 +1,5 @@
+#define USE_SERIAL
+
 #include <Adafruit_NeoPixel.h>
 
 // Which pin on the Arduino is connected to the NeoPixels?
@@ -223,6 +225,10 @@ void whiteOverRainbow(int whiteSpeed, int whiteLength) {
 
 void setup() {
     // put your setup code here, to run once:
+#ifdef USE_SERIAL
+    Serial.begin(9600);
+    Serial.println("RGB test");
+#endif
     strip.begin();           // INITIALIZE NeoPixel strip object (REQUIRED)
     strip.show();            // Turn OFF all pixels ASAP
     strip.setBrightness(bBrightness);
@@ -237,6 +243,12 @@ void loop() {
         strip.show();                          //  Update strip to match
         delay(50);                           //  Pause for a moment
     }
+#ifdef USE_SERIAL
+      Serial.print("loops: ");
+      Serial.println(colors, DEC);
+      Serial.print("pixel: ");
+      Serial.println(pixel, DEC);
+#endif
     strip.setPixelColor(pixel, colorWheel[colors][0], colorWheel[colors][1], colorWheel[colors][2]);
 //    displayNumber(digit, pixel, 69);
     colors++;
