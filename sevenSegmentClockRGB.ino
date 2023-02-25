@@ -1,6 +1,13 @@
 #define USE_SERIAL
+#define USE_AUTO_BRIGHTNESS
 
 #include <Adafruit_NeoPixel.h>
+
+#ifdef USE_AUTO_BRIGHTNESS
+const int luxSensorPin = A0;
+// float light;
+int luxValue;
+#endif  //USE_AUTO_BRIGHTNESS
 
 // Which pin on the Arduino is connected to the NeoPixels?
 const int ledPin = 14;
@@ -228,7 +235,12 @@ void setup() {
 #ifdef USE_SERIAL
     Serial.begin(9600);
     Serial.println("RGB test");
-#endif
+#endif  //USE_SERIAL
+
+#ifdef USE_AUTO_BRIGHTNESS
+    pinMode(luxSensorPin, INPUT); //data pin for ambientlight sensor
+#endif  //USE_AUTO_BRIGHTNESS
+
     strip.begin();           // INITIALIZE NeoPixel strip object (REQUIRED)
     strip.show();            // Turn OFF all pixels ASAP
     strip.setBrightness(bBrightness);
@@ -236,19 +248,30 @@ void setup() {
 
 void loop() {
     // put your main code here, to run repeatedly:
+#ifdef USE_AUTO_BRIGHTNESS
+    luxValue = analogRead(luxSensorPin);
+    bBrightness = luxValue * 0.249;// percentage calculation
+#ifdef USE_SERIAL
+    Serial.print("luxValue: ");
+    Serial.println(luxValue, DEC);
+    Serial.print("Brightness: ");
+    Serial.println(bBrightness, DEC);
+    strip.setBrightness(bBrightness);
+#endif  //USE_SERIAL
+#endif  //USE_AUTO_BRIGHTNESS
     //Fill along the length of the strip in various colors...
-    colorWipe(strip.Color(colorWheel[colors][0],  colorWheel[colors][1],  colorWheel[colors][2]), 50);
-    for(int i=0; i<strip.numPixels(); i++) { // For each pixel in strip...
-        strip.setPixelColor(i, colorWheel[colors][0], colorWheel[colors][1], colorWheel[colors][2]);         //  Set pixel's color (in RAM)
-        strip.show();                          //  Update strip to match
-        delay(50);                           //  Pause for a moment
-    }
+    // colorWipe(strip.Color(colorWheel[colors][0],  colorWheel[colors][1],  colorWheel[colors][2]), 50);
+    // for(int i=0; i<strip.numPixels(); i++) { // For each pixel in strip...
+    //     strip.setPixelColor(i, colorWheel[colors][0], colorWheel[colors][1], colorWheel[colors][2]);         //  Set pixel's color (in RAM)
+    //     strip.show();                          //  Update strip to match
+    //     delay(50);                           //  Pause for a moment
+    // }
 #ifdef USE_SERIAL
       Serial.print("loops: ");
       Serial.println(colors, DEC);
       Serial.print("pixel: ");
       Serial.println(pixel, DEC);
-#endif
+#endif  //USE_SERIAL
     strip.setPixelColor(pixel, colorWheel[colors][0], colorWheel[colors][1], colorWheel[colors][2]);
 //    displayNumber(digit, pixel, 69);
     colors++;
