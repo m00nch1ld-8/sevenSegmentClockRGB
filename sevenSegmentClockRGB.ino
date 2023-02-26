@@ -1,5 +1,6 @@
 #define USE_SERIAL
 #define USE_AUTO_BRIGHTNESS
+#define CLOCK_MODE
 
 #include <Adafruit_NeoPixel.h>
 
@@ -8,6 +9,114 @@ const int luxSensorPin = A0;
 // float light;
 int luxValue;
 #endif  //USE_AUTO_BRIGHTNESS
+
+#ifdef CLOCK_MODE
+#define DIGITAL_CLOCK
+//#define RING_CLOCK
+
+#ifdef DIGITAL_CLOCK
+#define DIGIT_CLOCK 4 // Choose 4 or 6
+#define ledSegm     1
+#define modeSegment 2
+#define USE_COLON
+
+uint8_t digitPos_1, digitPos_2, digitPos_3, digitPos_4;
+#ifdef USE_COLON
+uint8_t colonPos_1;
+#endif
+#if (DIGIT_CLOCK == 6)
+uint8_t digitPos_5, digitPos_6;
+#ifdef USE_COLON
+uint8_t colonPos_2;
+#endif
+#endif
+
+bool onOff = true;
+
+
+uint8_t numbers[40][7] = {
+  {1, 1, 1, 0, 1, 1, 1},      // 0
+  {0, 0, 1, 0, 0, 0, 1},      // 1
+  {0, 1, 1, 1, 1, 1, 0},      // 2
+  {0, 1, 1, 1, 0, 1, 1},      // 3
+  {1, 0, 1, 1, 0, 0, 1},      // 4
+  {1, 1, 0, 1, 0, 1, 1},      // 5
+  {1, 1, 0, 1, 1, 1, 1},      // 6
+  {0, 1, 1, 0, 0, 0, 1},      // 7
+  {1, 1, 1, 1, 1, 1, 1},      // 8
+  {1, 1, 1, 1, 0, 1, 1},      // 9
+  {0, 0, 0, 0, 0, 0, 0},      // off
+  {1, 1, 1, 1, 0, 0, 0},      // degrees symbol
+  {1, 1, 0, 0, 1, 1, 0},      // C(elcius)
+  {1, 1, 0, 1, 1, 0, 0},      // F(ahrenheit)
+  {0, 1, 1, 1, 1, 1, 1},      // a
+  {1, 0, 0, 1, 1, 1, 1},      // b
+  {0, 0, 0, 1, 1, 1, 0},      // c
+  {0, 0, 1, 1, 1, 1, 1},      // d
+  {1, 1, 0, 1, 1, 1, 0},      // e
+  {1, 1, 0, 1, 1, 0, 0},      // f
+  {1, 1, 0, 0, 1, 1, 1},      // g
+  {1, 0, 1, 1, 1, 0, 1},      // h
+  {0, 1, 0, 0, 1, 0, 0},      // i
+  {0, 1, 0, 0, 0, 1, 1},      // j
+  {1, 1, 0, 1, 1, 0, 1},      // k
+  {1, 0, 0, 0, 1, 1, 0},      // l
+  {0, 1, 0, 1, 1, 0, 1},      // m
+  {0, 0, 0, 1, 1, 0, 1},      // n
+  {0, 0, 0, 1, 1, 1, 1},      // o
+  {1, 1, 1, 1, 1, 0, 0},      // p
+  {1, 1, 1, 1, 0, 0, 1},      // q
+  {0, 0, 0, 1, 1, 0, 0},      // r
+  {1, 1, 0, 0, 0, 1, 1},      // s
+  {1, 0, 0, 1, 1, 1, 0},      // t
+  {0, 0, 0, 0, 1, 1, 1},      // u
+  {1, 0, 1, 0, 0, 1, 0},      // v
+  {1, 0, 1, 1, 0, 1, 0},      // w
+  {0, 0, 0, 0, 1, 0, 1},      // x
+  {1, 0, 1, 1, 0, 1, 1},      // y
+  {0, 1, 1, 0, 1, 1, 0},      // z
+};
+
+//    MODE == 1                MODE == 2                MODE == 3                MODE == 4
+//       B               //       B               //       F               //       A  
+//      ----             //      ----             //      ----             //      ----  
+// A  |      |  C        // A  |      |  C        // E  |      |  G        // F  |      |  B 
+//    |      |           //    |      |           //    |      |           //    |      |  
+//      ---- G           //      ---- D           //      ---- D           //      ---- G  
+//    |      |           //    |      |           //    |      |           //    |      |  
+// F  |      |  D        // E  |      |  G        // A  |      |  C        // E  |      |  C 
+//      ----             //      ----             //      ----             //      ----  
+//       E               //       F               //       B               //       D  
+//                        F A B G E D C               F A B G E D C               F A B G E D C
+//                    0 = 1 1 1 0 1 1 1           a = 0 1 1 1 1 1 1           n = 0 0 0 1 1 0 1
+//       A            1 = 0 0 1 0 0 0 1           b = 1 0 0 1 1 1 1           o = 0 0 0 1 1 1 1
+//      ----          2 = 0 1 1 1 1 1 0           c = 0 0 0 1 1 1 0           p = 1 1 1 1 1 0 0
+// F  |      |  B     3 = 0 1 1 1 0 1 1           d = 0 0 1 1 1 1 1           q = 1 1 1 1 0 0 1
+//    |      |        4 = 1 0 1 1 0 0 1           e = 1 1 0 1 1 1 0           r = 0 0 0 1 1 0 0
+//      ---- G        5 = 1 1 0 1 0 1 1           f = 1 1 0 1 1 0 0           s = 1 1 0 0 0 1 1
+//    |      |        6 = 1 1 0 1 1 1 1           g = 1 1 0 0 1 1 1           t = 1 0 0 1 1 1 0
+// E  |      |  C     7 = 0 1 1 0 0 0 1           h = 1 0 1 1 1 0 1           u = 0 0 0 0 1 1 1
+//      ----          8 = 1 1 1 1 1 1 1           i = 0 1 0 0 1 0 0           v = 1 0 1 0 0 1 0
+//       D            9 = 1 1 1 1 0 1 1           j = 0 1 0 0 0 1 1           w = 1 0 1 1 0 1 0
+//                  off = 0 0 0 0 0 0 0           k = 1 1 0 1 1 0 1           x = 0 0 0 0 1 0 1
+//               degree = 1 1 1 1 0 0 0           l = 1 0 0 0 1 1 0           y = 1 0 1 1 0 1 1
+//            C(elcius) = 1 1 0 0 1 1 0           m = 0 1 0 1 1 0 1           z = 0 1 1 0 1 1 0
+//         F(ahrenheit) = 1 1 0 1 1 0 0
+//    F A B G E D C
+//0 = 11111111111111111111111100000000111111111111111111111111
+//1 = 00000000000000001111111100000000000000000000000011111111
+//2 = 00000000111111111111111111111111111111111111111100000000
+//3 = 00000000111111111111111111111111000000001111111111111111
+//4 = 11111111000000001111111111111111000000000000000011111111
+//5 = 11111111000000000000000011111111000000001111111111111111
+//6 = 11111111111111110000000011111111111111111111111111111111
+//7 = 00000000111111111111111100000000000000000000000011111111
+//8 = 11111111111111111111111111111111111111111111111111111111
+//9 = 11111111111111111111111111111111000000001111111111111111
+
+
+#endif //DIGITAL_CLOCK
+#endif  //CLOCK_MODE
 
 // Which pin on the Arduino is connected to the NeoPixels?
 const int ledPin = 14;
@@ -230,6 +339,71 @@ void whiteOverRainbow(int whiteSpeed, int whiteLength) {
   }
 }
 
+void displayNumber(byte number, byte segment, byte color)
+{
+  uint16_t startIndex = 0;
+  uint8_t pos = 0;
+  switch(segment) {
+    case 0:
+      startIndex = digitPos_1;
+      break;
+    case 1:
+      startIndex = digitPos_2;
+      break;
+    case 2:
+      startIndex = digitPos_3;
+      break;
+    case 3:
+      startIndex = digitPos_4;
+      break;
+    default:
+      startIndex = 0;
+      break;
+  }
+
+  for(byte i=0; i<7; i++)
+  {
+    for(byte j=0; j<ledSegm; j++)
+    {
+      pos = startIndex + (i * ledSegm) + j;
+  //Serial.print("i : ");
+  //Serial.print(i);
+  //Serial.print(", j : ");
+  //Serial.print(j);
+  //Serial.print(", pos : ");
+  //Serial.print(pos);
+  //Serial.print(", numb : ");
+  //Serial.println(numbers[number][i]);
+      if(numbers[number][i] == 1)
+      {
+      	strip.setPixelColor(pos, 0, 255, 255);
+      }
+      else
+      {
+        strip.setPixelColor(pos, 0, 0, 0);
+      }
+    }
+  }
+}
+
+void displayColons(uint8_t color)
+{
+  uint8_t pos = 0;
+  pos = colonPos_1;
+  if(onOff)
+  {
+    strip.setPixelColor(pos, 255, 0, 0);
+    strip.setPixelColor(pos+1, 255, 0, 0);
+  }
+  else
+  {
+    strip.setPixelColor(pos, 0, 0, 0);
+    strip.setPixelColor(pos+1, 0, 0, 0);
+  }
+
+  onOff = !onOff;
+}
+
 void setup() {
     // put your setup code here, to run once:
 #ifdef USE_SERIAL
@@ -240,6 +414,31 @@ void setup() {
 #ifdef USE_AUTO_BRIGHTNESS
     pinMode(luxSensorPin, INPUT); //data pin for ambientlight sensor
 #endif  //USE_AUTO_BRIGHTNESS
+
+#ifdef CLOCK_MODE
+    digitPos_1 = 0;
+    digitPos_2 = (2*ledSegm);
+#ifdef USE_COLON
+    colonPos_1 = (3*ledSegm);
+    digitPos_3 = (3*ledSegm)+2;
+    digitPos_4 = (4*ledSegm)+2;
+#else
+    digitPos_3 = (3*ledSegm);
+    digitPos_4 = (4*ledSegm);
+#endif  //USE_COLON
+
+#if (DIGIT_CLOCK == 6)
+#ifdef USE_COLON
+    colonPos_2 = (5*ledSegm)+2;
+    digitPos_5 = (5*ledSegm)+4;
+    digitPos_6 = (6*ledSegm)+4;
+#else
+    digitPos_5 = (5*ledSegm);
+    digitPos_6 = (6*ledSegm);
+#endif  //USE_COLON
+#endif  //DIGIT_CLOCK == 6
+
+#endif  //CLOCK_MODE
 
     strip.begin();           // INITIALIZE NeoPixel strip object (REQUIRED)
     strip.show();            // Turn OFF all pixels ASAP
