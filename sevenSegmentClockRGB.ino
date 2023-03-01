@@ -3,6 +3,7 @@
 #define CLOCK_MODE
 
 #include <Adafruit_NeoPixel.h>
+#include "clock.h"
 
 #ifdef USE_AUTO_BRIGHTNESS
 const int luxSensorPin = A0;
@@ -20,20 +21,20 @@ int luxValue;
 #define modeSegment 2
 #define USE_COLON
 
-uint8_t digitPos_1, digitPos_2, digitPos_3, digitPos_4;
+uint8_t digitPos_0, digitPos_1, digitPos_2, digitPos_3;
 #ifdef USE_COLON
-uint8_t colonPos_1;
+uint8_t colonPos_0;
 #endif
 #if (DIGIT_CLOCK == 6)
-uint8_t digitPos_5, digitPos_6;
+uint16_t digitPos_4, digitPos_5;
 #ifdef USE_COLON
-uint8_t colonPos_2;
+uint8_t colonPos_1;
 #endif
 #endif
 
 bool onOff = true;
 
-
+/*  PINDAH DI CLOCK.H
 uint8_t numbers[40][7] = {
   {1, 1, 1, 0, 1, 1, 1},      // 0
   {0, 0, 1, 0, 0, 0, 1},      // 1
@@ -75,7 +76,7 @@ uint8_t numbers[40][7] = {
   {0, 0, 0, 0, 1, 0, 1},      // x
   {1, 0, 1, 1, 0, 1, 1},      // y
   {0, 1, 1, 0, 1, 1, 0},      // z
-};
+}; */
 
 //    MODE == 1                MODE == 2                MODE == 3                MODE == 4
 //       B               //       B               //       F               //       A  
@@ -345,17 +346,25 @@ void displayNumber(byte number, byte segment, byte color)
   uint8_t pos = 0;
   switch(segment) {
     case 0:
-      startIndex = digitPos_1;
+      startIndex = digitPos_0;
       break;
     case 1:
-      startIndex = digitPos_2;
+      startIndex = digitPos_1;
       break;
     case 2:
-      startIndex = digitPos_3;
+      startIndex = digitPos_2;
       break;
     case 3:
+      startIndex = digitPos_3;
+      break;
+#if (DIGIT_CLOCK == 6)
+    case 4:
       startIndex = digitPos_4;
       break;
+    case 5:
+      startIndex = digitPos_5;
+      break;
+#endif
     default:
       startIndex = 0;
       break;
@@ -386,23 +395,37 @@ void displayNumber(byte number, byte segment, byte color)
   }
 }
 
+#ifdef USE_COLON
 void displayColons(uint8_t color)
 {
   uint8_t pos = 0;
-  pos = colonPos_1;
+#if (DIGIT_CLOCK == 6)
+  uint8_t pos1 = 0;
+  pos1 = colonPos_1;
+#endif
+  pos = colonPos_0;
   if(onOff)
   {
     strip.setPixelColor(pos, 255, 0, 0);
     strip.setPixelColor(pos+1, 255, 0, 0);
+#if (DIGIT_CLOCK == 6)
+    strip.setPixelColor(pos1, 255, 0, 0);
+    strip.setPixelColor(pos1+1, 255, 0, 0);
+#endif
   }
   else
   {
     strip.setPixelColor(pos, 0, 0, 0);
     strip.setPixelColor(pos+1, 0, 0, 0);
+#if (DIGIT_CLOCK == 6)
+    strip.setPixelColor(pos1, 0, 0, 0);
+    strip.setPixelColor(pos1+1, 0, 0, 0);
+#endif
   }
 
   onOff = !onOff;
 }
+#endif  //USE_COLON
 
 void setup() {
     // put your setup code here, to run once:
@@ -416,28 +439,51 @@ void setup() {
 #endif  //USE_AUTO_BRIGHTNESS
 
 #ifdef CLOCK_MODE
-    digitPos_1 = 0;
-    digitPos_2 = (2*ledSegm);
+    digitPos_0 = 0;
+    digitPos_1 = 7*ledSegm;
 #ifdef USE_COLON
-    colonPos_1 = (3*ledSegm);
-    digitPos_3 = (3*ledSegm)+2;
-    digitPos_4 = (4*ledSegm)+2;
+    colonPos_0 = 14*ledSegm;
+    digitPos_2 = colonPos_0+2;
+    digitPos_3 = (21*ledSegm)+2;
 #else
-    digitPos_3 = (3*ledSegm);
-    digitPos_4 = (4*ledSegm);
+    digitPos_2 = 14*ledSegm;
+    digitPos_3 = 21*ledSegm;
 #endif  //USE_COLON
 
 #if (DIGIT_CLOCK == 6)
 #ifdef USE_COLON
-    colonPos_2 = (5*ledSegm)+2;
-    digitPos_5 = (5*ledSegm)+4;
-    digitPos_6 = (6*ledSegm)+4;
+    colonPos_1 = (28*ledSegm)+2;
+    digitPos_4 = colonPos_1+2;
+    digitPos_5 = (35*ledSegm)+4;
 #else
-    digitPos_5 = (5*ledSegm);
-    digitPos_6 = (6*ledSegm);
+    digitPos_4 = 28*ledSegm;
+    digitPos_5 = 35*ledSegm;
 #endif  //USE_COLON
 #endif  //DIGIT_CLOCK == 6
-
+#ifdef USE_SERIAL
+    Serial.print("digitPos_0: ");
+    Serial.println(digitPos_0, DEC);
+    Serial.print("digitPos_1: ");
+    Serial.println(digitPos_1, DEC);
+#ifdef USE_COLON
+    Serial.print("colonPos_0: ");
+    Serial.println(colonPos_0, DEC);
+#endif
+    Serial.print("digitPos_2: ");
+    Serial.println(digitPos_2, DEC);
+    Serial.print("digitPos_3: ");
+    Serial.println(digitPos_3, DEC);
+#if (DIGIT_CLOCK == 6)
+#ifdef USE_COLON
+    Serial.print("colonPos_1: ");
+    Serial.println(colonPos_1, DEC);
+#endif  //USE_COLON
+    Serial.print("digitPos_4: ");
+    Serial.println(digitPos_4, DEC);
+    Serial.print("digitPos_5: ");
+    Serial.println(digitPos_5, DEC);
+#endif  //(DIGIT_CLOCK == 6)
+#endif  //USE_SERIAL
 #endif  //CLOCK_MODE
 
     strip.begin();           // INITIALIZE NeoPixel strip object (REQUIRED)
